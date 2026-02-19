@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BharatChain — Universal Digital Identity</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #020609;
+  --surface: #060d14;
+  --surface2: #0a1520;
+  --border: #0f2235;
+  --border2: #1a3a5c;
+  --accent: #00c8ff;
+  --accent2: #00ff9d;
+  --accent3: #ff6b35;
+  --accent4: #a855f7;
+  --text: #e8f4fd;
+  --muted: #4a7a9b;
+  --danger: #ff3b5c;
+  --gold: #ffd700;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Rajdhani',sans-serif; min-height:100vh; overflow-x:hidden; }
+body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(0,200,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,255,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+
+/* HEADER */
+header { position:relative; z-index:10; display:flex; align-items:center; justify-content:space-between; padding:16px 36px; border-bottom:1px solid var(--border); background:rgba(2,6,9,0.97); backdrop-filter:blur(20px); }
+.logo { display:flex; align-items:center; gap:14px; }
+.logo-hex { width:42px; height:42px; background:linear-gradient(135deg,var(--accent),var(--accent2)); clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%); display:flex; align-items:center; justify-content:center; animation:pulse 3s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.3)} }
+.logo-text { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:3px; background:linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.logo-sub { font-size:9px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; }
+.header-right { display:flex; align-items:center; gap:16px; }
+.pill { display:flex; align-items:center; gap:7px; font-family:'JetBrains Mono',monospace; font-size:10px; padding:6px 14px; border-radius:4px; }
+.pill-green { color:var(--accent2); border:1px solid rgba(0,255,157,0.2); background:rgba(0,255,157,0.04); }
+.pill-purple { color:var(--accent4); border:1px solid rgba(168,85,247,0.2); background:rgba(168,85,247,0.04); }
+.dot { width:6px; height:6px; border-radius:50%; background:currentColor; animation:blink 1.5s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* API STATUS */
+.api-bar { background:rgba(0,200,255,0.05); border-bottom:1px solid var(--border); padding:8px 36px; font-family:'JetBrains Mono',monospace; font-size:10px; display:flex; align-items:center; gap:20px; position:relative; z-index:9; }
+.api-status { display:flex; align-items:center; gap:6px; }
+.api-connected { color:var(--accent2); }
+.api-disconnected { color:var(--danger); }
+.api-url { color:var(--muted); }
+#citizen-selector { background:var(--surface2); border:1px solid var(--border2); color:var(--accent); font-family:'JetBrains Mono',monospace; font-size:10px; padding:4px 10px; border-radius:3px; margin-left:auto; cursor:pointer; }
+#register-btn { background:rgba(0,200,255,0.1); border:1px solid rgba(0,200,255,0.3); color:var(--accent); font-family:'JetBrains Mono',monospace; font-size:10px; padding:5px 14px; border-radius:3px; cursor:pointer; transition:all 0.2s; }
+#register-btn:hover { background:rgba(0,200,255,0.2); }
+
+/* LAYOUT */
+.layout { display:grid; grid-template-columns:240px 1fr; min-height:calc(100vh - 105px); position:relative; z-index:1; }
+
+/* NAV */
+nav { border-right:1px solid var(--border); padding:20px 0; background:rgba(6,13,20,0.9); }
+.nav-section { margin-bottom:28px; }
+.nav-label { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:3px; color:var(--muted); text-transform:uppercase; padding:0 20px; margin-bottom:6px; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:11px 20px; cursor:pointer; transition:all 0.2s; border-left:2px solid transparent; font-size:13px; font-weight:500; letter-spacing:0.5px; color:var(--muted); }
+.nav-item:hover { background:rgba(0,200,255,0.04); color:var(--text); border-left-color:rgba(0,200,255,0.3); }
+.nav-item.active { background:rgba(0,200,255,0.06); color:var(--accent); border-left-color:var(--accent); }
+.nav-badge { margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:9px; padding:2px 6px; border-radius:2px; background:rgba(0,200,255,0.1); color:var(--accent); }
+
+/* MAIN */
+main { padding:28px 36px; overflow-y:auto; }
+.tab-content { display:none; }
+.tab-content.active { display:block; animation:fadein 0.3s ease; }
+@keyframes fadein { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+/* PAGE HEADER */
+.page-title { font-family:'Bebas Neue',sans-serif; font-size:40px; letter-spacing:3px; background:linear-gradient(135deg,var(--text),var(--accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:4px; }
+.page-sub { color:var(--muted); font-size:12px; font-family:'JetBrains Mono',monospace; letter-spacing:1px; margin-bottom:28px; }
+
+/* ID CARD */
+.id-card { position:relative; width:100%; max-width:660px; height:190px; background:linear-gradient(135deg,#020d1a,#041525,#071e32); border:1px solid var(--border2); border-radius:14px; padding:22px 26px; overflow:hidden; box-shadow:0 0 60px rgba(0,200,255,0.07); margin-bottom:28px; }
+.id-card::before { content:''; position:absolute; top:0;left:0;right:0; height:2px; background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent); }
+.id-card-circle { position:absolute; right:-30px; top:-30px; width:220px; height:220px; border:1px solid rgba(0,200,255,0.05); border-radius:50%; }
+.id-card-circle::after { content:''; position:absolute; inset:20px; border:1px solid rgba(0,200,255,0.03); border-radius:50%; }
+.id-gov { font-size:9px; letter-spacing:3px; color:var(--accent); text-transform:uppercase; font-family:'JetBrains Mono',monospace; margin-bottom:2px; }
+.id-title-text { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; color:var(--text); margin-bottom:16px; }
+.id-chip { width:42px; height:32px; background:linear-gradient(135deg,var(--gold),#b8860b); border-radius:5px; opacity:0.8; display:grid; grid-template-columns:1fr 1fr 1fr; gap:2px; padding:4px; }
+.id-chip-cell { background:rgba(0,0,0,0.3); border-radius:1px; }
+.id-body { display:grid; grid-template-columns:52px 1fr 1fr 1fr; gap:14px; align-items:start; }
+.id-avatar { width:52px; height:52px; border-radius:7px; background:linear-gradient(135deg,var(--accent),var(--accent4)); display:flex; align-items:center; justify-content:center; font-size:22px; border:2px solid rgba(0,200,255,0.3); }
+.id-field label { font-size:8px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; font-family:'JetBrains Mono',monospace; display:block; margin-bottom:3px; }
+.id-field .val { font-size:13px; font-weight:700; color:var(--text); }
+.id-field .uid { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent); letter-spacing:1px; }
+.id-footer { position:absolute; bottom:18px; left:26px; right:26px; display:flex; align-items:center; justify-content:space-between; }
+.id-hash-text { font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(74,122,155,0.4); }
+.id-verified { display:flex; align-items:center; gap:5px; font-size:9px; color:var(--accent2); font-family:'JetBrains Mono',monospace; }
+
+/* STATS */
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px; }
+.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; position:relative; overflow:hidden; transition:border-color 0.3s; }
+.stat-card:hover { border-color:var(--border2); }
+.stat-card::before { content:''; position:absolute; top:0;left:0;right:0; height:1px; background:linear-gradient(90deg,transparent,var(--sc,var(--accent)),transparent); }
+.stat-icon { font-size:20px; margin-bottom:10px; }
+.stat-value { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:var(--sc,var(--accent)); margin-bottom:3px; }
+.stat-label { font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+.loading-val { color:var(--muted); font-size:14px; }
+
+/* SECTION TITLE */
+.section-title { font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:3px; color:var(--muted); text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:12px; }
+.section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* MODULE GRID */
+.modules-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-bottom:28px; }
+.module-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; cursor:pointer; transition:all 0.3s; position:relative; overflow:hidden; }
+.module-card:hover { border-color:var(--mc,var(--accent)); transform:translateY(-2px); box-shadow:0 8px 30px rgba(0,0,0,0.3); }
+.module-card::before { content:''; position:absolute; top:0;left:0;right:0; height:2px; background:linear-gradient(90deg,var(--mc,var(--accent)),transparent); opacity:0; transition:opacity 0.3s; }
+.module-card:hover::before { opacity:1; }
+.module-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.module-icon { width:42px; height:42px; border-radius:9px; background:rgba(255,255,255,0.03); display:flex; align-items:center; justify-content:center; font-size:20px; border:1px solid var(--border); }
+.module-status { font-family:'JetBrains Mono',monospace; font-size:8px; padding:3px 7px; border-radius:3px; letter-spacing:1px; text-transform:uppercase; }
+.s-active { background:rgba(0,255,157,0.1); color:var(--accent2); border:1px solid rgba(0,255,157,0.2); }
+.s-beta { background:rgba(255,107,53,0.1); color:var(--accent3); border:1px solid rgba(255,107,53,0.2); }
+.module-title { font-size:15px; font-weight:700; color:var(--text); margin-bottom:5px; }
+.module-desc { font-size:11px; color:var(--muted); line-height:1.6; margin-bottom:14px; }
+.module-meta { display:flex; gap:14px; }
+.meta-item { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--mc,var(--accent)); }
+.meta-item span { color:var(--muted); display:block; font-size:8px; }
+
+/* PANEL */
+.panel { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; }
+.panel-title { font-size:11px; font-weight:600; letter-spacing:2px; color:var(--accent); text-transform:uppercase; font-family:'JetBrains Mono',monospace; margin-bottom:16px; }
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:28px; }
+
+/* LOG ITEMS */
+.log-item { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); font-size:12px; }
+.log-item:last-child { border-bottom:none; }
+.log-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.log-entity { font-weight:600; color:var(--text); min-width:100px; font-size:12px; }
+.log-action { color:var(--muted); flex:1; font-size:11px; }
+.log-time { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); }
+
+/* CONSENT TOGGLES */
+.consent-item { display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--border); }
+.consent-item:last-child { border-bottom:none; }
+.consent-label { font-size:12px; color:var(--text); font-weight:500; }
+.consent-sub { font-size:10px; color:var(--muted); margin-top:2px; }
+.toggle { position:relative; width:40px; height:21px; flex-shrink:0; }
+.toggle input { display:none; }
+.toggle-slider { position:absolute; inset:0; background:var(--border2); border-radius:11px; cursor:pointer; transition:background 0.3s; }
+.toggle-slider::before { content:''; position:absolute; width:15px; height:15px; left:3px; top:3px; background:white; border-radius:50%; transition:transform 0.3s; }
+.toggle input:checked + .toggle-slider { background:var(--accent2); }
+.toggle input:checked + .toggle-slider::before { transform:translateX(19px); }
+
+/* CHAIN BLOCKS */
+.chain-track { display:flex; align-items:center; overflow-x:auto; padding:8px 0; gap:0; }
+.block { background:var(--surface2); border:1px solid var(--border2); border-radius:8px; padding:12px 14px; min-width:150px; cursor:pointer; transition:all 0.3s; }
+.block:hover { border-color:var(--accent); box-shadow:0 0 16px rgba(0,200,255,0.1); }
+.block-num { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--muted); margin-bottom:4px; letter-spacing:1px; }
+.block-type { font-size:12px; font-weight:600; color:var(--text); margin-bottom:5px; }
+.block-hash { font-family:'JetBrains Mono',monospace; font-size:7px; color:var(--accent); }
+.block-time { font-family:'JetBrains Mono',monospace; font-size:7px; color:var(--muted); margin-top:3px; }
+.chain-link { width:36px; height:2px; background:linear-gradient(90deg,var(--border2),var(--accent),var(--border2)); flex-shrink:0; position:relative; }
+.chain-link::before,.chain-link::after { content:''; position:absolute; top:50%; transform:translateY(-50%); width:5px; height:5px; border-radius:50%; background:var(--accent); }
+.chain-link::before { left:0; }
+.chain-link::after { right:0; }
+
+/* MODAL */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:100; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--surface); border:1px solid var(--border2); border-radius:14px; padding:28px; width:440px; max-width:90vw; }
+.modal h2 { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:2px; color:var(--accent); margin-bottom:20px; }
+.form-group { margin-bottom:16px; }
+.form-group label { display:block; font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; font-family:'JetBrains Mono',monospace; margin-bottom:6px; }
+.form-group input { width:100%; background:var(--surface2); border:1px solid var(--border2); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12px; padding:10px 12px; border-radius:6px; outline:none; transition:border-color 0.2s; }
+.form-group input:focus { border-color:var(--accent); }
+.modal-btns { display:flex; gap:10px; margin-top:20px; }
+.btn-primary { flex:1; background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; color:#000; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; padding:11px; border-radius:6px; cursor:pointer; letter-spacing:1px; transition:opacity 0.2s; }
+.btn-primary:hover { opacity:0.85; }
+.btn-secondary { flex:1; background:transparent; border:1px solid var(--border2); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:11px; padding:11px; border-radius:6px; cursor:pointer; transition:all 0.2s; }
+.btn-secondary:hover { border-color:var(--muted); color:var(--text); }
+.msg { font-family:'JetBrains Mono',monospace; font-size:10px; padding:8px 12px; border-radius:5px; margin-top:12px; display:none; }
+.msg.success { background:rgba(0,255,157,0.1); color:var(--accent2); border:1px solid rgba(0,255,157,0.2); display:block; }
+.msg.error { background:rgba(255,59,92,0.1); color:var(--danger); border:1px solid rgba(255,59,92,0.2); display:block; }
+
+/* ZK FLOW */
+.zk-flow { display:flex; align-items:center; gap:0; margin-top:18px; flex-wrap:wrap; }
+.zk-box { flex:1; min-width:120px; background:var(--surface2); border:1px solid var(--border2); border-radius:8px; padding:14px; text-align:center; }
+.zk-box-icon { font-size:22px; margin-bottom:7px; }
+.zk-box-title { font-size:11px; font-weight:700; color:var(--text); margin-bottom:3px; }
+.zk-box-desc { font-size:9px; color:var(--muted); line-height:1.5; }
+.zk-arrow { padding:0 10px; color:var(--accent4); font-size:16px; }
+
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+</style>
+</head>
+<body>
+
+<!-- REGISTER MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2>REGISTER CITIZEN</h2>
+    <div class="form-group"><label>Aadhaar UID</label><input id="f-uid" type="text" placeholder="123456789012" maxlength="12"></div>
+    <div class="form-group"><label>Full Name</label><input id="f-name" type="text" placeholder="Rahul Sharma"></div>
+    <div class="form-group"><label>Date of Birth</label><input id="f-dob" type="text" placeholder="1990-08-15"></div>
+    <div class="form-group"><label>Gender</label><input id="f-gender" type="text" placeholder="M / F / Other"></div>
+    <div class="form-group"><label>Address</label><input id="f-addr" type="text" placeholder="Mumbai, Maharashtra"></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal()">CANCEL</button>
+      <button class="btn-primary" onclick="registerCitizen()">REGISTER ON CHAIN</button>
+    </div>
+    <div id="modal-msg" class="msg"></div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-hex"></div>
+    <div>
+      <div class="logo-text">BharatChain</div>
+      <div class="logo-sub">Universal Digital Identity Protocol</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="pill pill-green"><div class="dot"></div><span id="block-counter">CONNECTING...</span></div>
+    <div class="pill pill-purple"><div class="dot"></div>ZK-PROOFS ACTIVE</div>
+  </div>
+</header>
+
+<!-- API BAR -->
+<div class="api-bar">
+  <div class="api-status" id="api-status"><div class="dot" style="color:var(--muted)"></div><span style="color:var(--muted)">Connecting...</span></div>
+  <span class="api-url">http://localhost:8000</span>
+  <select id="citizen-selector" onchange="loadCitizen(this.value)">
+    <option value="">— Select Citizen —</option>
+  </select>
+  <button id="register-btn" onclick="openModal()">+ REGISTER NEW</button>
+</div>
+
+<div class="layout">
+<nav>
+  <div class="nav-section">
+    <div class="nav-label">Identity</div>
+    <div class="nav-item active" onclick="showTab('overview',this)">🪪 Universal ID <span class="nav-badge">LIVE</span></div>
+    <div class="nav-item" onclick="showTab('biometrics',this)">🔬 Biometrics</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Records</div>
+    <div class="nav-item" onclick="showTab('health',this)">🏥 Health Records</div>
+    <div class="nav-item" onclick="showTab('financial',this)">₹ Financial (PAN)</div>
+    <div class="nav-item" onclick="showTab('property',this)">🏛️ Land & Property</div>
+    <div class="nav-item" onclick="showTab('assets',this)">📊 Assets & Capital</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Security</div>
+    <div class="nav-item" onclick="showTab('consent',this)">🔐 Access Control</div>
+    <div class="nav-item" onclick="showTab('audit',this)">📋 Audit Trail</div>
+    <div class="nav-item" onclick="showTab('architecture',this)">⚙️ Architecture</div>
+  </div>
+</nav>
+
+<main>
+
+<!-- OVERVIEW -->
+<div id="tab-overview" class="tab-content active">
+  <div class="page-title">UNIVERSAL DIGITAL ID</div>
+  <div class="page-sub">// Decentralized · Zero-Knowledge · Tamper-Proof · Sovereign</div>
+
+  <div class="id-card">
+    <div class="id-card-circle"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;">
+      <div>
+        <div class="id-gov">GOVERNMENT OF INDIA</div>
+        <div class="id-title-text">BharatChain Universal ID</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <div class="id-chip"><div class="id-chip-cell"></div><div class="id-chip-cell"></div><div class="id-chip-cell"></div><div class="id-chip-cell"></div><div class="id-chip-cell" style="background:rgba(255,215,0,0.15)"></div><div class="id-chip-cell"></div><div class="id-chip-cell"></div><div class="id-chip-cell"></div><div class="id-chip-cell"></div></div>
+        <span style="font-size:26px">🇮🇳</span>
+      </div>
+    </div>
+    <div class="id-body">
+      <div class="id-avatar">👤</div>
+      <div class="id-field"><label>Full Name</label><div class="val" id="card-name">—</div></div>
+      <div class="id-field"><label>Date of Birth</label><div class="val" id="card-dob">—</div></div>
+      <div class="id-field"><label>UID (Aadhaar)</label><div class="uid" id="card-did">—</div></div>
+    </div>
+    <div class="id-footer">
+      <div class="id-hash-text" id="card-hash">Select a citizen to load identity</div>
+      <div class="id-verified" id="card-verified" style="opacity:0">✓ VERIFIED ON CHAIN</div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card" style="--sc:var(--accent)"><div class="stat-icon">🔗</div><div class="stat-value" id="stat-blocks">—</div><div class="stat-label">Blocks Written</div></div>
+    <div class="stat-card" style="--sc:var(--accent2)"><div class="stat-icon">🏥</div><div class="stat-value" id="stat-health">—</div><div class="stat-label">Health Records</div></div>
+    <div class="stat-card" style="--sc:var(--accent3)"><div class="stat-icon">🏛️</div><div class="stat-value" id="stat-props">—</div><div class="stat-label">Properties</div></div>
+    <div class="stat-card" style="--sc:var(--accent4)"><div class="stat-icon">📊</div><div class="stat-value" id="stat-assets">—</div><div class="stat-label">Asset Records</div></div>
+  </div>
+
+  <div class="section-title">DATA MODULES</div>
+  <div class="modules-grid">
+    <div class="module-card" style="--mc:#00c8ff" onclick="showTab('biometrics',null)"><div class="module-header"><div class="module-icon">🔬</div><div class="module-status s-active">ACTIVE</div></div><div class="module-title">Biometric Layer</div><div class="module-desc">Iris, fingerprint, facial geometry — stored as cryptographic hashes only. Raw data never touches the chain.</div><div class="module-meta"><div class="meta-item">ZK-SNARK<span>Proof Type</span></div><div class="meta-item">AES-256<span>Encryption</span></div></div></div>
+    <div class="module-card" style="--mc:#00ff9d" onclick="showTab('health',null)"><div class="module-header"><div class="module-icon">🏥</div><div class="module-status s-active">ACTIVE</div></div><div class="module-title">Health Records</div><div class="module-desc">FHIR R4 compliant medical records, prescriptions, diagnostics — permissioned per provider.</div><div class="module-meta"><div class="meta-item">FHIR R4<span>Standard</span></div><div class="meta-item" id="mod-health-count">—<span>Records</span></div></div></div>
+    <div class="module-card" style="--mc:#ffd700" onclick="showTab('financial',null)"><div class="module-header"><div class="module-icon">₹</div><div class="module-status s-active">ACTIVE</div></div><div class="module-title">Financial ID (PAN+)</div><div class="module-desc">Replaces PAN card. Tax history, ITR filings, GST linkage — unified financial identity on chain.</div><div class="module-meta"><div class="meta-item">TDS/GST<span>Linked</span></div><div class="meta-item" id="mod-fin-count">—<span>Records</span></div></div></div>
+    <div class="module-card" style="--mc:#ff6b35" onclick="showTab('property',null)"><div class="module-header"><div class="module-icon">🏛️</div><div class="module-status s-active">ACTIVE</div></div><div class="module-title">Land & Property Registry</div><div class="module-desc">Immutable land titles, mutation history, encumbrance certificates — duplicate registration impossible.</div><div class="module-meta"><div class="meta-item" id="mod-prop-count">—<span>Titles</span></div><div class="meta-item">NFT-like<span>Token Type</span></div></div></div>
+    <div class="module-card" style="--mc:#a855f7" onclick="showTab('assets',null)"><div class="module-header"><div class="module-icon">📊</div><div class="module-status s-active">ACTIVE</div></div><div class="module-title">Capital Assets</div><div class="module-desc">Equity, mutual funds, gold, FDs — auto-synced LTCG/STCG computation for tax filing.</div><div class="module-meta"><div class="meta-item" id="mod-asset-count">—<span>Records</span></div><div class="meta-item">LTCG/STCG<span>Auto-filed</span></div></div></div>
+    <div class="module-card" style="--mc:#ff3b5c" onclick="showTab('consent',null)"><div class="module-header"><div class="module-icon">🔐</div><div class="module-status s-beta">BETA</div></div><div class="module-title">Consent Engine</div><div class="module-desc">Granular permission system — you control who sees what. Every access is logged on-chain immutably.</div><div class="module-meta"><div class="meta-item" id="mod-consent-count">—<span>Active Consents</span></div><div class="meta-item">3 Tiers<span>Access Levels</span></div></div></div>
+  </div>
+</div>
+
+<!-- HEALTH -->
+<div id="tab-health" class="tab-content">
+  <div class="page-title">HEALTH RECORDS</div>
+  <div class="page-sub">// FHIR R4 compliant · Provider-permissioned · Immutable</div>
+  <div class="two-col">
+    <div class="panel"><div class="panel-title">RECORDS</div><div id="health-list"><div style="color:var(--muted);font-size:12px;">Select a citizen to view records.</div></div></div>
+    <div class="panel">
+      <div class="panel-title">ADD HEALTH RECORD</div>
+      <div class="form-group"><label>Requester ID</label><input id="h-req" type="text" placeholder="APOLLO_HOSPITAL" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Record Type</label><input id="h-type" type="text" placeholder="prescription | diagnosis | vaccination" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Provider Name</label><input id="h-prov" type="text" placeholder="Apollo Hospitals" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Notes</label><input id="h-notes" type="text" placeholder="e.g. Hypertension diagnosed" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <button class="btn-primary" onclick="addHealthRecord()" style="width:100%;margin-top:8px;">WRITE TO CHAIN</button>
+      <div id="health-msg" class="msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FINANCIAL -->
+<div id="tab-financial" class="tab-content">
+  <div class="page-title">FINANCIAL ID (PAN+)</div>
+  <div class="page-sub">// Unified tax identity · Replaces PAN · Auto-compliance</div>
+  <div class="two-col">
+    <div class="panel"><div class="panel-title">FINANCIAL RECORDS</div><div id="fin-list"><div style="color:var(--muted);font-size:12px;">Select a citizen to view records.</div></div></div>
+    <div class="panel">
+      <div class="panel-title">ADD FINANCIAL RECORD</div>
+      <div class="form-group"><label>Requester ID</label><input id="fin-req" type="text" placeholder="INCOME_TAX_DEPT" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>PAN Hash</label><input id="fin-pan" type="text" placeholder="ABCDE1234F" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Financial Year</label><input id="fin-fy" type="text" placeholder="2024-25" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Record Type</label><input id="fin-type" type="text" placeholder="itr | tds | gst | credit_score" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Total Income (₹)</label><input id="fin-income" type="number" placeholder="1200000" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <button class="btn-primary" onclick="addFinancialRecord()" style="width:100%;margin-top:8px;">WRITE TO CHAIN</button>
+      <div id="fin-msg" class="msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROPERTY -->
+<div id="tab-property" class="tab-content">
+  <div class="page-title">LAND & PROPERTY</div>
+  <div class="page-sub">// Immutable land titles · No fake documents · Instant verification</div>
+  <div class="two-col">
+    <div class="panel"><div class="panel-title">PROPERTY TITLES</div><div id="prop-list"><div style="color:var(--muted);font-size:12px;">Select a citizen to view properties.</div></div></div>
+    <div class="panel">
+      <div class="panel-title">REGISTER PROPERTY</div>
+      <div class="form-group"><label>Requester ID</label><input id="p-req" type="text" placeholder="SUBREGISTRAR_OFFICE" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Property Type</label><input id="p-type" type="text" placeholder="flat | plot | agricultural" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>State</label><input id="p-state" type="text" placeholder="Maharashtra" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>District</label><input id="p-district" type="text" placeholder="Mumbai" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Area (sqft)</label><input id="p-area" type="number" placeholder="850" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Registered Value (₹)</label><input id="p-value" type="number" placeholder="12000000" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <button class="btn-primary" onclick="addProperty()" style="width:100%;margin-top:8px;">REGISTER ON CHAIN</button>
+      <div id="prop-msg" class="msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ASSETS -->
+<div id="tab-assets" class="tab-content">
+  <div class="page-title">CAPITAL & ASSETS</div>
+  <div class="page-sub">// Auto-aggregated · LTCG / STCG computed on-chain</div>
+  <div class="two-col">
+    <div class="panel"><div class="panel-title">ASSET RECORDS</div><div id="asset-list"><div style="color:var(--muted);font-size:12px;">Select a citizen to view assets.</div></div></div>
+    <div class="panel">
+      <div class="panel-title">SYNC ASSET</div>
+      <div class="form-group"><label>Requester ID</label><input id="a-req" type="text" placeholder="CDSL" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Asset Type</label><input id="a-type" type="text" placeholder="equity | mf | gold | fd | crypto" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Source</label><input id="a-src" type="text" placeholder="CDSL | NSDL | AMFI" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Net Value (₹)</label><input id="a-val" type="number" placeholder="6200000" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <button class="btn-primary" onclick="addAsset()" style="width:100%;margin-top:8px;">SYNC TO CHAIN</button>
+      <div id="asset-msg" class="msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CONSENT -->
+<div id="tab-consent" class="tab-content">
+  <div class="page-title">ACCESS CONTROL</div>
+  <div class="page-sub">// Citizen-controlled permissions · Every access logged immutably</div>
+  <div class="two-col">
+    <div class="panel"><div class="panel-title">ACTIVE CONSENTS</div><div id="consent-list"><div style="color:var(--muted);font-size:12px;">Select a citizen to view consents.</div></div></div>
+    <div class="panel">
+      <div class="panel-title">GRANT CONSENT</div>
+      <div class="form-group"><label>Aadhaar UID (to verify ownership)</label><input id="c-uid" type="text" placeholder="123456789012" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Requester ID</label><input id="c-req" type="text" placeholder="APOLLO_HOSPITAL" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Requester Name</label><input id="c-name" type="text" placeholder="Apollo Hospitals Pvt Ltd" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Modules (comma-separated)</label><input id="c-mods" type="text" placeholder="health, financial, property" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <div class="form-group"><label>Duration (days)</label><input id="c-days" type="number" placeholder="30" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;border-radius:5px;width:100%;outline:none;"></div>
+      <button class="btn-primary" onclick="grantConsent()" style="width:100%;margin-top:8px;">GRANT ON CHAIN</button>
+      <div id="consent-msg" class="msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AUDIT -->
+<div id="tab-audit" class="tab-content">
+  <div class="page-title">AUDIT TRAIL</div>
+  <div class="page-sub">// Every access, every transaction — immutably logged</div>
+  <div class="panel" style="margin-bottom:20px;">
+    <div class="panel-title">RECENT CHAIN BLOCKS</div>
+    <div class="chain-track" id="chain-track"><div style="color:var(--muted);font-size:12px;">Connecting to chain...</div></div>
+  </div>
+  <div class="panel"><div class="panel-title">ACCESS LOG</div><div id="audit-list"><div style="color:var(--muted);font-size:12px;">Select a citizen to view audit trail.</div></div></div>
+</div>
+
+<!-- BIOMETRICS -->
+<div id="tab-biometrics" class="tab-content">
+  <div class="page-title">BIOMETRIC LAYER</div>
+  <div class="page-sub">// Raw data NEVER stored — only cryptographic hashes</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;">
+    <div class="panel" style="text-align:center;"><div style="font-size:36px;margin-bottom:10px;">👁️</div><div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px;">Iris Scan</div><div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--accent);">HASH: sha3-256</div><div style="font-size:11px;color:var(--accent2);margin-top:6px;" id="bio-iris">Not enrolled</div></div>
+    <div class="panel" style="text-align:center;"><div style="font-size:36px;margin-bottom:10px;">🖐️</div><div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px;">10 Fingerprints</div><div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--accent);">HASH: pbkdf2</div><div style="font-size:11px;color:var(--accent2);margin-top:6px;" id="bio-fp">Not enrolled</div></div>
+    <div class="panel" style="text-align:center;"><div style="font-size:36px;margin-bottom:10px;">🤳</div><div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px;">Facial Geometry</div><div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--accent);">HASH: sha3-256</div><div style="font-size:11px;color:var(--accent2);margin-top:6px;" id="bio-face">Not enrolled</div></div>
+  </div>
+  <div class="panel"><div class="panel-title">PRIVACY ARCHITECTURE</div><div style="font-size:13px;color:var(--muted);line-height:2;margin-top:4px;">Raw biometric data is <span style="color:var(--accent)">NEVER stored on-chain</span>. A one-way hash is generated on the citizen's device and only the hash is written to the blockchain. Verification uses ZK-SNARK proofs — the biometric is re-hashed locally and the proof confirms a match without transmitting any data.</div></div>
+</div>
+
+<!-- ARCHITECTURE -->
+<div id="tab-architecture" class="tab-content">
+  <div class="page-title">SYSTEM ARCHITECTURE</div>
+  <div class="page-sub">// Technical design of the BharatChain stack</div>
+  <div class="panel" style="margin-bottom:20px;">
+    <div class="panel-title">ZERO-KNOWLEDGE PROOF FLOW</div>
+    <div class="zk-flow">
+      <div class="zk-box"><div class="zk-box-icon">👤</div><div class="zk-box-title">Citizen</div><div class="zk-box-desc">Holds biometric data and private records</div></div>
+      <div class="zk-arrow">→</div>
+      <div class="zk-box"><div class="zk-box-icon">🧮</div><div class="zk-box-title">ZK-SNARK Prover</div><div class="zk-box-desc">Proves "age &gt; 18" without revealing DOB</div></div>
+      <div class="zk-arrow">→</div>
+      <div class="zk-box"><div class="zk-box-icon">📜</div><div class="zk-box-title">Proof on Chain</div><div class="zk-box-desc">Cryptographic proof stored, not raw data</div></div>
+      <div class="zk-arrow">→</div>
+      <div class="zk-box"><div class="zk-box-icon">✅</div><div class="zk-box-title">Verifier</div><div class="zk-box-desc">Bank confirms claim, sees nothing private</div></div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+    <div class="panel"><div class="panel-title" style="color:var(--accent)">BLOCKCHAIN</div><div style="font-size:12px;color:var(--muted);line-height:2;">Hyperledger Fabric 2.x<br>Ethereum (private PoA)<br>IPFS / Filecoin<br>Merkle DAG storage<br>Tendermint BFT consensus</div></div>
+    <div class="panel"><div class="panel-title" style="color:var(--accent2)">CRYPTOGRAPHY</div><div style="font-size:12px;color:var(--muted);line-height:2;">ZK-SNARK (Groth16)<br>Homomorphic encryption<br>AES-256-GCM<br>secp256k1 wallets<br>SHA-3 / Keccak-256</div></div>
+    <div class="panel"><div class="panel-title" style="color:var(--accent4)">STANDARDS</div><div style="font-size:12px;color:var(--muted);line-height:2;">W3C DID v1.0<br>Verifiable Credentials<br>HL7 FHIR R4 (health)<br>ISO/IEC 27001<br>DPDP Act 2023</div></div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+const API = 'https://bharatchain-api.onrender.com';
+let currentCitizenId = null;
+let citizens = {};
+let blockCount = 18442900;
+
+// ── API helpers ─────────────────────────────────────────────────────────────
+async function api(path, method='GET', body=null) {
+  const opts = { method, headers: {'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const status = await api('/');
+    document.getElementById('api-status').innerHTML =
+      `<div class="dot" style="color:var(--accent2)"></div><span class="api-connected">CONNECTED · ${status.system} v${status.version}</span>`;
+    document.getElementById('block-counter').textContent = `MAINNET · BLOCK #${blockCount.toLocaleString()}`;
+    setInterval(() => {
+      blockCount += Math.floor(Math.random()*3)+1;
+      document.getElementById('block-counter').textContent = `MAINNET · BLOCK #${blockCount.toLocaleString()}`;
+    }, 5000);
+    loadChainBlocks();
+  } catch(e) {
+    document.getElementById('api-status').innerHTML =
+      `<div class="dot" style="color:var(--danger)"></div><span class="api-disconnected">DISCONNECTED — run: python main.py</span>`;
+  }
+}
+
+// ── Nav ───────────────────────────────────────────────────────────────────────
+function showTab(id, el) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if (el) el.classList.add('active');
+  if (currentCitizenId) {
+    if (id==='health') loadHealthRecords();
+    if (id==='financial') loadFinancialRecords();
+    if (id==='property') loadProperties();
+    if (id==='assets') loadAssets();
+    if (id==='consent') loadConsents();
+    if (id==='audit') loadAudit();
+  }
+}
+
+// ── Register ──────────────────────────────────────────────────────────────────
+function openModal() { document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+async function registerCitizen() {
+  const msg = document.getElementById('modal-msg');
+  msg.className = 'msg';
+  try {
+    const res = await api('/identity/register', 'POST', {
+      uid: document.getElementById('f-uid').value,
+      full_name: document.getElementById('f-name').value,
+      dob: document.getElementById('f-dob').value,
+      gender: document.getElementById('f-gender').value,
+      address: document.getElementById('f-addr').value,
+    });
+    citizens[res.citizen_id] = {name: document.getElementById('f-name').value, dob: document.getElementById('f-dob').value};
+    const sel = document.getElementById('citizen-selector');
+    const opt = document.createElement('option');
+    opt.value = res.citizen_id;
+    opt.textContent = document.getElementById('f-name').value + ' (' + res.citizen_id.slice(0,8) + '...)';
+    sel.appendChild(opt);
+    msg.textContent = 'Registered! DID: ' + res.did.slice(0,32) + '...';
+    msg.className = 'msg success';
+    setTimeout(() => { closeModal(); loadCitizen(res.citizen_id); sel.value = res.citizen_id; }, 1500);
+  } catch(e) {
+    msg.textContent = 'Error: ' + e.message.slice(0,120);
+    msg.className = 'msg error';
+  }
+}
+
+// ── Load Citizen ──────────────────────────────────────────────────────────────
+async function loadCitizen(id) {
+  if (!id) return;
+  currentCitizenId = id;
+  try {
+    const data = await api('/identity/'+id);
+    document.getElementById('card-name').textContent = citizens[id]?.name || 'CITIZEN';
+    document.getElementById('card-dob').textContent = citizens[id]?.dob || '—';
+    document.getElementById('card-did').textContent = data.did.slice(0,28) + '...';
+    document.getElementById('card-hash').textContent = 'BLOCK: ' + (data.block_hash||'').slice(0,20) + '...';
+    document.getElementById('card-verified').style.opacity = '1';
+    document.getElementById('bio-iris').textContent = data.biometrics_enrolled?.iris ? '✓ Enrolled' : 'Not enrolled';
+    document.getElementById('bio-fp').textContent = data.biometrics_enrolled?.fingerprint ? '✓ Enrolled' : 'Not enrolled';
+    document.getElementById('bio-face').textContent = data.biometrics_enrolled?.face ? '✓ Enrolled' : 'Not enrolled';
+    loadStats();
+  } catch(e) { console.error(e); }
+}
+
+async function loadStats() {
+  if (!currentCitizenId) return;
+  try {
+    const [h, f, p, a, c] = await Promise.allSettled([
+      api('/health/'+currentCitizenId+'/records?requester_id=INCOME_TAX_DEPT'),
+      api('/financial/'+currentCitizenId+'/records?requester_id=INCOME_TAX_DEPT'),
+      api('/property/'+currentCitizenId+'/titles?requester_id=INCOME_TAX_DEPT'),
+      api('/assets/'+currentCitizenId+'?requester_id=INCOME_TAX_DEPT'),
+      api('/consent/'+currentCitizenId),
+    ]);
+    const hv = h.status==='fulfilled' ? h.value : [];
+    const fv = f.status==='fulfilled' ? f.value : [];
+    const pv = p.status==='fulfilled' ? p.value : [];
+    const av = a.status==='fulfilled' ? a.value : [];
+    const cv = c.status==='fulfilled' ? c.value : [];
+    document.getElementById('stat-health').textContent = hv.length;
+    document.getElementById('stat-props').textContent = pv.length;
+    document.getElementById('stat-assets').textContent = av.length;
+    document.getElementById('stat-blocks').textContent = (hv.length+fv.length+pv.length+av.length)*2+1;
+    document.getElementById('mod-health-count').textContent = hv.length;
+    document.getElementById('mod-fin-count').textContent = fv.length;
+    document.getElementById('mod-prop-count').textContent = pv.length;
+    document.getElementById('mod-asset-count').textContent = av.length;
+    document.getElementById('mod-consent-count').textContent = cv.length;
+  } catch(e) {}
+}
+
+// ── Health ────────────────────────────────────────────────────────────────────
+async function loadHealthRecords() {
+  const el = document.getElementById('health-list');
+  el.innerHTML = '<div style="color:var(--muted);font-size:12px;">Loading...</div>';
+  try {
+    const records = await api('/health/'+currentCitizenId+'/records?requester_id=INCOME_TAX_DEPT&requester_name=System');
+    if (!records.length) { el.innerHTML = '<div style="color:var(--muted);font-size:12px;">No records yet.</div>'; return; }
+    el.innerHTML = records.map(r => `
+      <div class="log-item">
+        <div class="log-dot" style="background:var(--accent2)"></div>
+        <div class="log-entity">${r.provider_name||'—'}</div>
+        <div class="log-action">${r.record_type} · ${r.data?.notes||r.data?.diagnosis||'—'}</div>
+        <div class="log-time">${r.record_date?.slice(0,10)||'—'}</div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = '<div style="color:var(--muted);font-size:12px;">Grant INCOME_TAX_DEPT consent first.</div>'; }
+}
+
+async function addHealthRecord() {
+  const msg = document.getElementById('health-msg'); msg.className='msg';
+  try {
+    await api('/health/'+currentCitizenId+'/records','POST',{
+      requester_id: document.getElementById('h-req').value,
+      record_type: document.getElementById('h-type').value,
+      provider_name: document.getElementById('h-prov').value,
+      provider_id: document.getElementById('h-req').value,
+      record_data: { notes: document.getElementById('h-notes').value },
+    });
+    msg.textContent = 'Record written to chain!'; msg.className='msg success';
+    loadHealthRecords(); loadStats();
+  } catch(e) { msg.textContent = e.message.slice(0,150); msg.className='msg error'; }
+}
+
+// ── Financial ─────────────────────────────────────────────────────────────────
+async function loadFinancialRecords() {
+  const el = document.getElementById('fin-list');
+  el.innerHTML = '<div style="color:var(--muted);font-size:12px;">Loading...</div>';
+  try {
+    const records = await api('/financial/'+currentCitizenId+'/records?requester_id=INCOME_TAX_DEPT');
+    if (!records.length) { el.innerHTML = '<div style="color:var(--muted);font-size:12px;">No records yet.</div>'; return; }
+    el.innerHTML = records.map(r => `
+      <div class="log-item">
+        <div class="log-dot" style="background:var(--gold)"></div>
+        <div class="log-entity">${r.financial_year}</div>
+        <div class="log-action">${r.record_type}${r.total_income ? ' · ₹'+Number(r.total_income).toLocaleString() : ''}</div>
+        <div class="log-time">BLOCK</div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = '<div style="color:var(--muted);font-size:12px;">Grant INCOME_TAX_DEPT consent first.</div>'; }
+}
+
+async function addFinancialRecord() {
+  const msg = document.getElementById('fin-msg'); msg.className='msg';
+  try {
+    await api('/financial/'+currentCitizenId+'/records','POST',{
+      requester_id: document.getElementById('fin-req').value,
+      pan_hash: document.getElementById('fin-pan').value,
+      financial_year: document.getElementById('fin-fy').value,
+      record_type: document.getElementById('fin-type').value,
+      data: { financial_year: document.getElementById('fin-fy').value },
+      total_income: parseFloat(document.getElementById('fin-income').value)||null,
+    });
+    msg.textContent = 'Record written to chain!'; msg.className='msg success';
+    loadFinancialRecords(); loadStats();
+  } catch(e) { msg.textContent = e.message.slice(0,150); msg.className='msg error'; }
+}
+
+// ── Property ──────────────────────────────────────────────────────────────────
+async function loadProperties() {
+  const el = document.getElementById('prop-list');
+  el.innerHTML = '<div style="color:var(--muted);font-size:12px;">Loading...</div>';
+  try {
+    const records = await api('/property/'+currentCitizenId+'/titles?requester_id=INCOME_TAX_DEPT');
+    if (!records.length) { el.innerHTML = '<div style="color:var(--muted);font-size:12px;">No properties yet.</div>'; return; }
+    el.innerHTML = records.map(r => `
+      <div class="log-item">
+        <div class="log-dot" style="background:var(--accent3)"></div>
+        <div class="log-entity">${r.property_uid}</div>
+        <div class="log-action">${r.property_type} · ${r.district}, ${r.state} · ${r.area_sqft} sqft</div>
+        <div class="log-time">${r.encumbrance_status}</div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = '<div style="color:var(--muted);font-size:12px;">Grant INCOME_TAX_DEPT consent first.</div>'; }
+}
+
+async function addProperty() {
+  const msg = document.getElementById('prop-msg'); msg.className='msg';
+  try {
+    await api('/property/'+currentCitizenId+'/register','POST',{
+      requester_id: document.getElementById('p-req').value,
+      property_type: document.getElementById('p-type').value,
+      state: document.getElementById('p-state').value,
+      district: document.getElementById('p-district').value,
+      area_sqft: parseFloat(document.getElementById('p-area').value)||0,
+      registered_value: parseFloat(document.getElementById('p-value').value)||0,
+      registration_date: new Date().toISOString(),
+    });
+    msg.textContent = 'Property registered on chain!'; msg.className='msg success';
+    loadProperties(); loadStats();
+  } catch(e) { msg.textContent = e.message.slice(0,150); msg.className='msg error'; }
+}
+
+// ── Assets ────────────────────────────────────────────────────────────────────
+async function loadAssets() {
+  const el = document.getElementById('asset-list');
+  el.innerHTML = '<div style="color:var(--muted);font-size:12px;">Loading...</div>';
+  try {
+    const records = await api('/assets/'+currentCitizenId+'?requester_id=INCOME_TAX_DEPT');
+    if (!records.length) { el.innerHTML = '<div style="color:var(--muted);font-size:12px;">No assets yet.</div>'; return; }
+    el.innerHTML = records.map(r => `
+      <div class="log-item">
+        <div class="log-dot" style="background:var(--accent4)"></div>
+        <div class="log-entity">${r.asset_type}</div>
+        <div class="log-action">${r.source} · ₹${Number(r.net_value).toLocaleString()}</div>
+        <div class="log-time">${r.as_of_date?.slice(0,10)}</div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = '<div style="color:var(--muted);font-size:12px;">Grant INCOME_TAX_DEPT consent first.</div>'; }
+}
+
+async function addAsset() {
+  const msg = document.getElementById('asset-msg'); msg.className='msg';
+  try {
+    await api('/assets/'+currentCitizenId+'/sync','POST',{
+      requester_id: document.getElementById('a-req').value,
+      asset_type: document.getElementById('a-type').value,
+      source: document.getElementById('a-src').value,
+      portfolio_data: { source: document.getElementById('a-src').value },
+      net_value: parseFloat(document.getElementById('a-val').value)||0,
+    });
+    msg.textContent = 'Asset synced to chain!'; msg.className='msg success';
+    loadAssets(); loadStats();
+  } catch(e) { msg.textContent = e.message.slice(0,150); msg.className='msg error'; }
+}
+
+// ── Consent ───────────────────────────────────────────────────────────────────
+async function loadConsents() {
+  const el = document.getElementById('consent-list');
+  el.innerHTML = '<div style="color:var(--muted);font-size:12px;">Loading...</div>';
+  try {
+    const records = await api('/consent/'+currentCitizenId);
+    if (!records.length) { el.innerHTML = '<div style="color:var(--muted);font-size:12px;">No active consents.</div>'; return; }
+    el.innerHTML = records.map(r => `
+      <div class="log-item">
+        <div class="log-dot" style="background:var(--accent)"></div>
+        <div class="log-entity">${r.requester_name||r.requester_id}</div>
+        <div class="log-action">${r.modules?.join(', ')} · ${r.tier}</div>
+        <div class="log-time">${r.expires_at?.slice(0,10)||'—'}</div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = '<div style="color:var(--danger);font-size:12px;">'+e.message+'</div>'; }
+}
+
+async function grantConsent() {
+  const msg = document.getElementById('consent-msg'); msg.className='msg';
+  try {
+    await api('/consent/'+currentCitizenId+'/grant','POST',{
+      citizen_uid: document.getElementById('c-uid').value,
+      requester_id: document.getElementById('c-req').value,
+      requester_name: document.getElementById('c-name').value,
+      modules: document.getElementById('c-mods').value.split(',').map(m=>m.trim()).filter(Boolean),
+      duration_days: parseInt(document.getElementById('c-days').value)||30,
+    });
+    msg.textContent = 'Consent granted on chain!'; msg.className='msg success';
+    loadConsents(); loadStats();
+  } catch(e) { msg.textContent = e.message.slice(0,150); msg.className='msg error'; }
+}
+
+// ── Audit ─────────────────────────────────────────────────────────────────────
+async function loadAudit() {
+  const el = document.getElementById('audit-list');
+  el.innerHTML = '<div style="color:var(--muted);font-size:12px;">Loading...</div>';
+  try {
+    const records = await api('/consent/'+currentCitizenId+'/audit');
+    if (!records.length) { el.innerHTML = '<div style="color:var(--muted);font-size:12px;">No audit entries yet.</div>'; return; }
+    el.innerHTML = records.map(r => `
+      <div class="log-item">
+        <div class="log-dot" style="background:${r.action.includes('DENIED')?'var(--danger)':r.action==='READ'?'var(--accent)':'var(--accent2)'}"></div>
+        <div class="log-entity">${r.actor||'System'}</div>
+        <div class="log-action">${r.action} · ${r.module} · ${r.details||''}</div>
+        <div class="log-time">${r.timestamp?.slice(0,16)?.replace('T',' ')}</div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = '<div style="color:var(--muted);font-size:12px;">No data.</div>'; }
+}
+
+// ── Chain blocks ──────────────────────────────────────────────────────────────
+async function loadChainBlocks() {
+  const el = document.getElementById('chain-track');
+  const fakeBlocks = [
+    {type:'🪪 IDENTITY', req:'UIDAI'},
+    {type:'🏥 HEALTH', req:'Apollo'},
+    {type:'₹ FINANCIAL', req:'Income Tax'},
+    {type:'🏛️ PROPERTY', req:'Sub-Registrar'},
+    {type:'📊 ASSET SYNC', req:'CDSL'},
+  ];
+  el.innerHTML = fakeBlocks.map((b,i) => `
+    <div class="block"><div class="block-num">BLOCK #${(blockCount-fakeBlocks.length+i+1).toLocaleString()}</div><div class="block-type">${b.type}</div><div class="block-hash">0x${Math.random().toString(16).slice(2,18)}...</div><div class="block-time">${i===fakeBlocks.length-1?'just now':(fakeBlocks.length-i)+'h ago'} · ${b.req}</div></div>
+    ${i<fakeBlocks.length-1?'<div class="chain-link"></div>':''}`).join('');
+}
+
+init();
+</script>
+</body>
+</html>
